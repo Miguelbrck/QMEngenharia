@@ -521,4 +521,5 @@ footer{background:var(--ink-navy); color:var(--paper); padding:48px 0 28px;}
   .plan-photo-body{padding:12px 40px 12px 14px;} .plan-photo-body h4{font-size:16px;} .plan-photo-body p{font-size:12.5px;}
   .plan-photo.nophoto{display:block;}
 }
+.plan-photo[hidden]{display:none !important;}
 @media (prefers-reduced-motion:reduce){ .plan-photo.pop{animation:none;} .plan-hint{transition:none;} }

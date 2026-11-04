@@ -332,16 +332,18 @@ document.getElementById('nextPhoto').addEventListener('click', ()=>{
 function closeBuilding(){ buildingOverlay.classList.remove('open'); }
 document.getElementById('closeBuilding').addEventListener('click', closeBuilding);
 document.getElementById('closeBuilding2').addEventListener('click', closeBuilding);
-buildingOverlay.addEventListener('click', e=>{ if(e.target===buildingOverlay) closeBuilding(); });
+/* fecha somente pelo X (ou Esc) */
 
 /* ---------------- AGENDA MODAL ---------------- */
 const scheduleOverlay = document.getElementById('scheduleOverlay');
 const scheduleBody = document.getElementById('scheduleBody');
 const scheduleFormHTML = scheduleBody.innerHTML;
 let selectedSlot = null;
+let sending = false;
 
 document.getElementById('openSchedule').addEventListener('click', ()=>{
   document.getElementById('sBuildingName').textContent = currentBuilding ? currentBuilding.name : '—';
+  loadingOverlay.classList.remove('open');   // garante que nenhum carregamento antigo fique aberto
   scheduleBody.innerHTML = scheduleFormHTML;
   bindScheduleForm();
   const dateInput = document.getElementById('visitDate');
@@ -383,6 +385,7 @@ function bindScheduleForm(){
   });
   document.getElementById('scheduleForm').addEventListener('submit', async e=>{
     e.preventDefault();
+    if(sending) return;                     // evita envio duplo
     const date  = document.getElementById('visitDate').value;
     const name  = document.getElementById('visitName').value.trim();
     const email = document.getElementById('visitEmail').value.trim();
@@ -398,13 +401,16 @@ function bindScheduleForm(){
     const btn = e.target.querySelector('button[type="submit"]');
     const btnLabel = btn.textContent;
     btn.disabled = true; btn.textContent = 'Enviando...';
+    sending = true;
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 20000);   // se o servidor travar, desiste em 20 s
     closeSchedule();                       // fecha o pop-up do formulário
     const logoAnim = runLogoLoading();     // abre o quadrado branco com a logo carregando
     try{
       // espera o envio E o fim da animação da logo
       const [res] = await Promise.all([
         fetch('/api/agendar', {
-          method:'POST',
+          method:'POST', signal: ctrl.signal,
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ name, email, phone, date, slot:selectedSlot, buildingId: currentBuilding.id, consent:true })
         }),
@@ -413,12 +419,14 @@ function bindScheduleForm(){
       const data = await res.json().catch(()=>({}));
       if(!res.ok) throw new Error(data.error || 'Falha no envio');
     }catch(err){
+      clearTimeout(timer); sending = false;
       loadingOverlay.classList.remove('open');
       scheduleOverlay.classList.add('open');   // volta para o formulário
       alert('Não foi possível enviar a confirmação agora. Tente novamente ou ligue para (34) 9 9884-0187.');
       btn.disabled = false; btn.textContent = btnLabel;
       return;
     }
+    clearTimeout(timer); sending = false;
     loadingOverlay.classList.remove('open');
     const esc = t => String(t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const dateFmt = new Date(date+'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
@@ -456,7 +464,7 @@ function runLogoLoading(){
 }
 function closeSchedule(){ scheduleOverlay.classList.remove('open'); }
 document.getElementById('closeSchedule').addEventListener('click', closeSchedule);
-scheduleOverlay.addEventListener('click', e=>{ if(e.target===scheduleOverlay) closeSchedule(); });
+/* fecha somente pelo X (ou Esc) */
 
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){ closeBuilding(); closeSchedule(); closeCat(); }

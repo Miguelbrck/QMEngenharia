@@ -667,7 +667,7 @@ window.addEventListener('resize', resize);
 
 /* ---------------- botões e atalhos ---------------- */
 els.close.addEventListener('click', closePlan);
-overlay.addEventListener('click', e=>{ if(e.target === overlay) closePlan(); });
+/* o popup da planta fecha somente pelo X (ou Esc) */
 els.reset.addEventListener('click', ()=>{ select(null, false); resetView(true); });
 els.walls.addEventListener('click', ()=>{
   wallMode = wallMode === 'auto' ? 'high' : wallMode === 'high' ? 'low' : 'auto';
